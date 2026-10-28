@@ -50,4 +50,10 @@ def buscar_votacoes(data_inicio: str, data_fim: str) -> list[dict]:
 
 
 def buscar_votos(id_votacao: str) -> list[dict]:
-    return _requisitar(f"{BASE_URL}/votacoes/{id_votacao}/votos")["dados"]
+    try:
+        corpo = _requisitar(f"{BASE_URL}/votacoes/{id_votacao}/votos")
+    except httpx.HTTPStatusError as erro:
+        if erro.response.status_code == 404:
+            return []
+        raise
+    return corpo["dados"]
