@@ -89,3 +89,35 @@ def salvar_votos(
             """,
             linhas,
         )
+
+def listar_proposicoes_pendentes(conexao: psycopg.Connection) -> list[int]:
+    with conexao.cursor() as cursor:
+        cursor.execute(
+            """
+            select distinct v.id_proposicao
+            from votacoes v
+            left join proposicoes p on p.id = v.id_proposicao
+            where p.id is null
+            """
+        )
+        return [linha[0] for linha in cursor.fetchall()]
+
+
+def salvar_proposicao(conexao: psycopg.Connection, proposicao: dict) -> None:
+    with conexao.cursor() as cursor:
+        cursor.execute(
+            """
+            insert into proposicoes (
+                id, sigla_tipo, numero, ano, ementa,
+                data_apresentacao, url_inteiro_teor
+            )
+            values (
+                %(id)s, %(siglaTipo)s, %(numero)s, %(ano)s, %(ementa)s,
+                %(dataApresentacao)s, %(urlInteiroTeor)s
+            )
+            on conflict (id) do update set
+                ementa = excluded.ementa,
+                url_inteiro_teor = excluded.url_inteiro_teor
+            """,
+            proposicao,
+        )

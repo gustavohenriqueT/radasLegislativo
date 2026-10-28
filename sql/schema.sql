@@ -22,3 +22,13 @@ create table if not exists votos (
 );
 
 create index if not exists idx_votos_deputado on votos (id_deputado);
+
+create table if not exists proposicoes (
+    id integer primary key,
+    sigla_tipo text not null,
+    numero integer not null,
+    ano integer not null,
+    ementa text,
+    data_apresentacao timestamp,
+    url_inteiro_teor text
+);

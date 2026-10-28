@@ -1,18 +1,31 @@
 import httpx
+import time
 
 BASE_URL = "https://dadosabertos.camara.leg.br/api/v2"
 PLENARIO = 180
-
+TENTATIVAS = 3
+ERROS_TEMPORARIOS = {429, 502, 503, 504}
 
 def _requisitar(url: str, params: dict | None = None) -> dict:
-    resposta = httpx.get(
-        url,
-        params=params,
-        headers={"Accept": "application/json"},
-        timeout=30,
-    )
-    resposta.raise_for_status()
-    return resposta.json()
+    for tentativa in range(1, TENTATIVAS + 1):
+        try:
+            resposta = httpx.get(
+                url,
+                params=params,
+                headers={"Accept": "application/json"},
+                timeout=30,
+            )
+            resposta.raise_for_status()
+            return resposta.json()
+        except httpx.TimeoutException:
+            if tentativa == TENTATIVAS:
+                raise
+        except httpx.HTTPStatusError as erro:
+            temporario = erro.response.status_code in ERROS_TEMPORARIOS
+            if not temporario or tentativa == TENTATIVAS:
+                raise
+
+        time.sleep(2**tentativa)
 
 
 def _listar(caminho: str, params: dict) -> list[dict]:
@@ -55,5 +68,14 @@ def buscar_votos(id_votacao: str) -> list[dict]:
     except httpx.HTTPStatusError as erro:
         if erro.response.status_code == 404:
             return []
+        raise
+    return corpo["dados"]
+
+def buscar_proposicao(id_proposicao: int) -> dict | None:
+    try:
+        corpo = _requisitar(f"{BASE_URL}/proposicoes/{id_proposicao}")
+    except httpx.HTTPStatusError as erro:
+        if erro.response.status_code == 404:
+            return None
         raise
     return corpo["dados"]
