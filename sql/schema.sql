@@ -5,12 +5,22 @@ create table if not exists deputados (
     url_foto text
 );
 
+create table if not exists proposicoes (
+    id integer primary key,
+    sigla_tipo text not null,
+    numero integer not null,
+    ano integer not null,
+    ementa text,
+    data_apresentacao timestamp,
+    url_inteiro_teor text
+);
+
 create table if not exists votacoes (
     id text primary key,
     data date not null,
     descricao text,
     aprovacao boolean,
-    id_proposicao integer
+    id_proposicao integer references proposicoes (id)
 );
 
 create table if not exists votos (
@@ -22,13 +32,3 @@ create table if not exists votos (
 );
 
 create index if not exists idx_votos_deputado on votos (id_deputado);
-
-create table if not exists proposicoes (
-    id integer primary key,
-    sigla_tipo text not null,
-    numero integer not null,
-    ano integer not null,
-    ementa text,
-    data_apresentacao timestamp,
-    url_inteiro_teor text
-);

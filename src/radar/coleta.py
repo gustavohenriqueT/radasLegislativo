@@ -1,0 +1,32 @@
+from radar import banco, camara
+
+
+def _id_proposicao(id_votacao: str) -> int:
+    return int(id_votacao.split("-")[0])
+
+
+def coletar_periodo(data_inicio: str, data_fim: str) -> None:
+    votacoes = camara.buscar_votacoes(data_inicio, data_fim)
+    print(f"{len(votacoes)} votações no período")
+
+    with banco.conectar() as conexao:
+        ids_proposicoes = {_id_proposicao(votacao["id"]) for votacao in votacoes}
+        existentes = banco.listar_ids_proposicoes(conexao)
+
+        for id_proposicao in ids_proposicoes - existentes:
+            proposicao = camara.buscar_proposicao(id_proposicao)
+            if proposicao is None:
+                print(f"proposição {id_proposicao} não encontrada")
+                continue
+            banco.salvar_proposicao(conexao, proposicao)
+
+        banco.salvar_votacoes(conexao, votacoes)
+        conexao.commit()
+
+        for votacao in votacoes:
+            votos = camara.buscar_votos(votacao["id"])
+            if not votos:
+                continue
+            banco.salvar_votos(conexao, votacao["id"], votos)
+            conexao.commit()
+            print(f"{votacao['id']}: {len(votos)} votos")

@@ -25,6 +25,7 @@ def salvar_deputados(conexao: psycopg.Connection, deputados: list[dict]) -> None
             deputados,
         )
 
+
 def _para_booleano(valor: int | None) -> bool | None:
     if valor is None:
         return None
@@ -47,7 +48,10 @@ def salvar_votacoes(conexao: psycopg.Connection, votacoes: list[dict]) -> None:
         cursor.executemany(
             """
             insert into votacoes (id, data, descricao, aprovacao, id_proposicao)
-            values (%(id)s, %(data)s, %(descricao)s, %(aprovacao)s, %(id_proposicao)s)
+            values (
+                %(id)s, %(data)s, %(descricao)s, %(aprovacao)s,
+                (select id from proposicoes where id = %(id_proposicao)s)
+            )
             on conflict (id) do update set
                 descricao = excluded.descricao,
                 aprovacao = excluded.aprovacao
@@ -90,17 +94,11 @@ def salvar_votos(
             linhas,
         )
 
-def listar_proposicoes_pendentes(conexao: psycopg.Connection) -> list[int]:
+
+def listar_ids_proposicoes(conexao: psycopg.Connection) -> set[int]:
     with conexao.cursor() as cursor:
-        cursor.execute(
-            """
-            select distinct v.id_proposicao
-            from votacoes v
-            left join proposicoes p on p.id = v.id_proposicao
-            where p.id is null
-            """
-        )
-        return [linha[0] for linha in cursor.fetchall()]
+        cursor.execute("select id from proposicoes")
+        return {linha[0] for linha in cursor.fetchall()}
 
 
 def salvar_proposicao(conexao: psycopg.Connection, proposicao: dict) -> None:

@@ -1,33 +1,10 @@
-from radar.camara import buscar_deputados, buscar_votacoes, buscar_votos
-from radar.organizacao import agrupar_votos
-from radar.banco import conectar, salvar_deputados
-from radar.camara import buscar_deputados
-from radar.banco import conectar, salvar_votacoes, salvar_votos
-from radar.camara import buscar_votacoes, buscar_votos
+import argparse
 
-deputados = buscar_deputados("SP")
-with conectar() as conexao:
-    salvar_deputados(conexao, deputados)
-print(f"{len(deputados)} deputados salvos")
+from radar.coleta import coletar_periodo
 
-votacoes = buscar_votacoes("2026-05-01", "2026-05-31")
+parser = argparse.ArgumentParser(description="Coleta votações do Plenário da Câmara")
+parser.add_argument("inicio", help="data inicial no formato AAAA-MM-DD")
+parser.add_argument("fim", help="data final no formato AAAA-MM-DD")
+args = parser.parse_args()
 
-with conectar() as conexao:
-    salvar_votacoes(conexao, votacoes)
-
-    for votacao in votacoes:
-        votos = buscar_votos(votacao["id"])
-        if votos:
-            salvar_votos(conexao, votacao["id"], votos)
-            print(f"{votacao['id']}: {len(votos)} votos")
-
-votos = buscar_votos("2351506-122")
-print(f"{len(votos)} votos na votação 2351506-122")
-
-grupos = agrupar_votos(votos)
-for tipo, nomes in grupos.items():
-    print(f"\n{tipo} ({len(nomes)})")
-    for nome in nomes:
-        print(f"  {nome}")
-
-print(grupos.keys())
+coletar_periodo(args.inicio, args.fim)
